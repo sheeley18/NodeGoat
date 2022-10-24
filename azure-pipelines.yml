@@ -1,0 +1,33 @@
+# Node.js
+# Build a general Node.js project with npm.
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
+
+trigger:
+- master
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- task: NodeTool@0
+  inputs:
+    versionSpec: '10.x'
+  displayName: 'Install Node.js'
+
+- script: |
+    npm install
+    npm run build
+  displayName: 'npm install and build'
+
+steps:
+- bash: |
+   BRIDGE=https://sig-repo.synopsys.com/artifactory/bds-integrations-release/com/synopsys/integration/synopsys-action/0.1.72/ci-package-0.1.72-linux64.zip
+   export BRIDGE_POLARIS_SERVERURL=https://poc.polaris.synopsys.com
+   export BRIDGE_POLARIS_ACCESSTOKEN=$(BRIDGE_POLARIS_ACCESSTOKEN)
+   export BRIDGE_POLARIS_APPLICATION_NAME=SRH-Testing
+   export BRIDGE_POLARIS_PROJECT_NAME=SRH-Nodegoata
+   curl -fLsS -o $(Agent.TempDirectory)/bridge.zip $BRIDGE
+   unzip -qo -d $(Agent.TempDirectory)/bridge $(Agent.TempDirectory)/bridge.zip
+   $(Agent.TempDirectory)/bridge/bridge --stage polaris polaris.assessment.types='["SAST","SCA"]'
+  displayName: 'Bash Script'
